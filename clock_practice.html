@@ -112,7 +112,7 @@
     align-items: center;
     gap: 10px;
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
   }
 
   .input-row input {
@@ -204,7 +204,7 @@
     font-size: 0.82rem;
     color: #7b3a00;
     width: 100%;
-    max-width: 400px;
+    max-width: 420px;
     text-align: center;
     line-height: 1.6;
   }
@@ -251,12 +251,7 @@
 
   <div class="input-area">
     <div class="input-row">
-      <input type="text" id="ans-ji"  placeholder="じ" autocomplete="off" spellcheck="false">
-      <label>じ</label>
-    </div>
-    <div class="input-row">
-      <input type="text" id="ans-fun" placeholder="ふん・ぷん" autocomplete="off" spellcheck="false">
-      <label>ふん・ぷん</label>
+      <input type="text" id="ans-all" placeholder="れい：にじさんぷん" autocomplete="off" spellcheck="false">
     </div>
   </div>
 
@@ -268,9 +263,7 @@
     <button class="btn-next"   id="btn-next"   onclick="nextQuestion()">▶ つぎへ</button>
   </div>
 
-  <div class="hint-box">
-    <b>ぷん</b>：1・3・4・6・8・10 &nbsp;｜&nbsp; <b>ふん</b>：2・5・7・9
-  </div>
+
 </div>
 
 <div id="result-screen">
@@ -401,38 +394,47 @@ function loadQuestion() {
   const p = problems[current];
   document.getElementById('q-number').textContent = `Question ${current + 1} / ${problems.length}`;
   document.getElementById('progress-bar').style.width = `${(current / problems.length) * 100}%`;
-  document.getElementById('ans-ji').value  = '';
-  document.getElementById('ans-fun').value = '';
-  document.getElementById('ans-ji').className  = '';
-  document.getElementById('ans-fun').className = '';
+  document.getElementById('ans-all').value = '';
+  document.getElementById('ans-all').className = '';
   document.getElementById('feedback').textContent = '';
   document.getElementById('feedback').className   = 'feedback';
   document.getElementById('btn-check').style.display  = '';
   document.getElementById('btn-reveal').style.display = '';
   document.getElementById('btn-next').style.display   = 'none';
-  document.getElementById('ans-ji').focus();
+  document.getElementById('ans-all').focus();
   drawClock(p.h, p.m);
+}
+
+function getCorrects(p) {
+  // Build list of all accepted answers
+  const base = normalize(p.hh + p.mh);
+  const alts = [];
+  // 8ぷん: はっぷん or はちふん both OK
+  if (p.m === 8) {
+    alts.push(normalize(p.hh + 'はちふん'));
+    alts.push(normalize(p.hh + 'はっぷん'));
+  }
+  return [base, ...alts];
 }
 
 function checkAnswer() {
   if (answered) return;
   const p   = problems[current];
-  const ji  = normalize(document.getElementById('ans-ji').value);
-  const fun = normalize(document.getElementById('ans-fun').value);
-  const okJi  = ji  === normalize(p.hh);
-  const okFun = fun === normalize(p.mh);
+  const input = normalize(document.getElementById('ans-all').value);
+  const corrects = getCorrects(p);
+  const ok = corrects.includes(input);
 
-  document.getElementById('ans-ji').classList.add(okJi  ? 'correct' : 'wrong');
-  document.getElementById('ans-fun').classList.add(okFun ? 'correct' : 'wrong');
+  document.getElementById('ans-all').classList.add(ok ? 'correct' : 'wrong');
 
   const fb = document.getElementById('feedback');
-  if (okJi && okFun) {
+  if (ok) {
     fb.textContent = '⭐ せいかい！すごい！';
     fb.className = 'feedback ok';
     score++;
     document.getElementById('score-display').textContent = score;
   } else {
-    fb.textContent = `❌ こたえ：${p.hh}　${p.mh}`;
+    const altMsg = p.m === 8 ? `（${p.hh}はちふん も OK）` : '';
+    fb.textContent = `❌ こたえ：${p.hh}${p.mh} ${altMsg}`;
     fb.className = 'feedback ng';
   }
 
@@ -445,12 +447,11 @@ function checkAnswer() {
 function revealAnswer() {
   if (answered) return;
   const p = problems[current];
-  document.getElementById('ans-ji').value  = p.hh;
-  document.getElementById('ans-fun').value = p.mh;
-  document.getElementById('ans-ji').classList.add('wrong');
-  document.getElementById('ans-fun').classList.add('wrong');
+  document.getElementById('ans-all').value = p.hh + p.mh;
+  document.getElementById('ans-all').classList.add('wrong');
   const fb = document.getElementById('feedback');
-  fb.textContent = `💡 こたえ：${p.hh}　${p.mh}`;
+  const altMsg2 = p.m === 8 ? `（${p.hh}はちふん も OK）` : '';
+  fb.textContent = `💡 こたえ：${p.hh}${p.mh} ${altMsg2}`;
   fb.className = 'feedback ans';
   answered = true;
   document.getElementById('btn-next').style.display = '';
